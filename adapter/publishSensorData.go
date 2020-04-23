@@ -32,20 +32,17 @@ func main() {
 
 	//initialize go sdk, point to edge (localhost url, system key/secret for the edge)
 	//NewDeviceClientWithServiceAccountAndAddrs(localhost, localhost:1883, systemkey, systemsecret, deviceName, service account token string)
-	client := GoSDK.NewDeviceClientWithServiceAccountAndAddrs("localhost", "localhost:1883", "", "", "", "") //todo real data
+	deviceClient = GoSDK.NewDeviceClientWithServiceAccountAndAddrs("localhost", "localhost:1883", "", "", "", "") //todo real data
 
 	//init mqtt (lines 109 + 110 of adapter-go-library todo
 
 	//use deviceclient to sub / pub
 	//todo sub to topic that sets LED state, pass through to setLedState
 	//todo pub to topic that stores hygrothermo data -- two pubs, one for each
-	//payload, err := client.Subscribe("LED", 0) //todo check qos
 	err := initMQTT("LED", mqttCallback)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//res := message{}
-	//payload
 	//topics are not defined! pub/sub automagically creates them
 	//add a timer that publishes every (10) sec
 	ticker := time.NewTicker(10 * time.Second)
