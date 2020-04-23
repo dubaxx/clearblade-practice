@@ -34,16 +34,16 @@ func main() {
 	//NewDeviceClientWithServiceAccountAndAddrs(localhost, localhost:1883, systemkey, systemsecret, deviceName, service account token string)
 	deviceClient = GoSDK.NewDeviceClientWithServiceAccountAndAddrs("localhost", "localhost:1883", "", "", "", "") //todo real data
 
-	//init mqtt (lines 109 + 110 of adapter-go-library todo
+	//init mqtt (lines 109 + 110 of adapter-go-library
 
 	//use deviceclient to sub / pub
-	//todo sub to topic that sets LED state, pass through to setLedState
-	//todo pub to topic that stores hygrothermo data -- two pubs, one for each
+	//sub to topic that sets LED state, pass through to setLedState
 	err := initMQTT("LED", mqttCallback)
 	if err != nil {
 		log.Fatal(err)
 	}
 	//topics are not defined! pub/sub automagically creates them
+	//pub to topic that stores hygrothermo data -- two pubs, one for each
 	//add a timer that publishes every (10) sec
 	ticker := time.NewTicker(10 * time.Second)
 	done := make(chan bool)
