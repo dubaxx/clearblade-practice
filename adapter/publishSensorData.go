@@ -115,11 +115,11 @@ func initMQTT(messageReceivedCallback MQTTMessageReceived) error {
 	return nil
 }
 
-func onConnectionLost(client mqtt.Client, err error) {
+func onConnectionLost(_ mqtt.Client, err error) {
 	log.Println(err)
 }
 
-func onConnect(client mqtt.Client) {
+func onConnect(_ mqtt.Client) {
 	log.Println("onConnect - connected to mqtt")
 }
 
