@@ -56,39 +56,24 @@ func main() {
 			case <-done:
 				return
 			case t := <-ticker.C:
-				_, humidity := getHygroThermoData()
+				temperature, humidity := getHygroThermoData()
 
-				payload := marshal(t, humidity)
+				hygroPayload := marshal(t, humidity)
+				thermoPayload := marshal(t, temperature)
 
-				err2 := client.Publish("Hygrometer", payload, 0)
-				if err2 != nil {
-					log.Fatal(err2)
+				err := Publish("Hygrometer", hygroPayload)
+				if err != nil {
+					log.Fatal(err)
 				}
+				err = Publish("Thermometer", thermoPayload)
+				if err != nil {
+					log.Fatal(err)
+				}
+
 			}
 
 		}
 	}()
-	ticker2 := time.NewTicker(10 * time.Second)
-	done2 := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-done2:
-				return
-			case t := <-ticker2.C:
-				temperature, _ := getHygroThermoData()
-
-				payload := marshal(t, temperature)
-
-				err2 := client.Publish("Thermometer", payload, 0)
-				if err2 != nil {
-					log.Fatal(err2)
-				}
-			}
-
-		}
-	}()
-	//subscriber is always listening
 
 	//create collection on platform
 	//create deployment to sync to edge
@@ -116,6 +101,10 @@ func unmarshal(payload []byte) (t time.Time, v float32) {
 		log.Fatal(err)
 	}
 	return res.Time, res.Value
+}
+
+func Publish(topic string, message []byte) error {
+	return deviceClient.Publish(topic, message, 0)
 }
 
 func initMQTT(topicToSubscribe string, messageReceivedCallback MQTTMessageReceived) error {
