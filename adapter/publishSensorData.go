@@ -9,7 +9,6 @@ import (
 	"github.com/d2r2/go-dht"
 	"github.com/stianeikeland/go-rpio"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -17,7 +16,7 @@ var (
 	blinkerPin     = rpio.Pin(10) //physical pin 19
 	hygroThermoPin = 17           //physical pin 11
 	deviceClient   *GoSDK.DeviceClient
-	topic          string
+	//topic          string
 	mqttCallback   MQTTMessageReceived
 )
 
@@ -38,10 +37,13 @@ func main() {
 
 	//use deviceclient to sub / pub
 	//sub to topic that sets LED state, pass through to setLedState
-	err := initMQTT("LED", mqttCallback)
+	err := initMQTT(mqttCallback)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	subscribe("LED")
+
 	//topics are not defined! pub/sub automagically creates them
 	//pub to topic that stores hygrothermo data -- two pubs, one for each
 	//add a timer that publishes every (10) sec
@@ -104,43 +106,32 @@ func Publish(topic string, message []byte) error {
 	return deviceClient.Publish(topic, message, 0)
 }
 
-func initMQTT(topicToSubscribe string, messageReceivedCallback MQTTMessageReceived) error {
-	log.Println("[INFO] initMQTT - Initializing MQTT")
-	topic = topicToSubscribe
+func initMQTT(messageReceivedCallback MQTTMessageReceived) error {
 	mqttCallback = messageReceivedCallback
-	callbacks := GoSDK.Callbacks{OnConnectionLostCallback: onConnectLost, OnConnectCallback: onConnect}
+	callbacks := GoSDK.Callbacks{OnConnectionLostCallback: onConnectionLost, OnConnectCallback: onConnect}
 	if err := deviceClient.InitializeMQTTWithCallback("", "", 30, nil, nil, &callbacks); err != nil { //todo clientid
-		return fmt.Errorf("Failed to initialize MQTT connection: %s", err.Error())
+		return fmt.Errorf("failed to connect %s", err.Error())
 	}
 	return nil
 }
 
-func onConnectLost(client mqtt.Client, connerr error) {
-	log.Printf("[INFO] onConnectLost - Connection to MQTT broker was lost: %s\n", connerr.Error())
+func onConnectionLost(client mqtt.Client, err error) {
+	log.Println(err)
 }
 
 func onConnect(client mqtt.Client) {
-	log.Println("[INFO] OnConnect - Connected to ClearBlade Platform MQTT broker")
+	log.Println("onConnect - connected to mqtt")
+}
 
-	if topic != "" && mqttCallback != nil {
-		// this is a bit fragile, relying on a specific error message text to check if error was lack of permissions or not, it it's not we want to retry,
-		// but if it is we want to quit out because this won't ever work
-		log.Println("[INFO] onConnect - Subscribing to provided topic " + topic)
+func subscribe(topic string) {
+	if mqttCallback != nil {
 		var cbSubChannel <-chan *mqttTypes.Publish
 		var err error
-		for cbSubChannel, err = deviceClient.Subscribe(topic, 0); err != nil; {
-			if strings.Contains(err.Error(), "Connection lost before Subscribe completed") {
-				log.Fatalf("[FATAL] onConnect - Ensure your device has subscribe permissionns to topic %s\n", topic)
-			} else {
-				log.Printf("[ERROR] onConnect - Error subscribing to MQTT topic: %s\n", err.Error())
-				log.Println("[ERROR] onConnect - Retrying in 30 seconds...")
-				time.Sleep(time.Duration(30 * time.Second))
-				cbSubChannel, err = deviceClient.Subscribe(topic, 0)
-			}
+		cbSubChannel, err = deviceClient.Subscribe(topic, 0)
+		if err != nil {
+			log.Fatal(err)
 		}
 		go cbMessageListener(cbSubChannel)
-	} else {
-		log.Println("[INFO] onConnect - no topic of mqtt callback supplied, will not subscribe to any MQTT topics")
 	}
 }
 
@@ -149,7 +140,6 @@ func cbMessageListener(onPubChannel <-chan *mqttTypes.Publish) {
 		select {
 		case message, ok := <-onPubChannel:
 			if ok {
-				log.Printf("[DEBUG] cbMessageListener - message received on topic %s with payload %s\n", message.Topic.Whole, string(message.Payload))
 				mqttCallback(message)
 				_, value := unmarshal(message.Payload)
 				if int(value) != 0 { //dirty dirty bad boy, fix the struct
