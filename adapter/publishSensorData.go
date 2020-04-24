@@ -18,7 +18,6 @@ var (
 	blinkerPin     = rpio.Pin(10) //physical pin 19
 	hygroThermoPin = 17           //physical pin 11
 	deviceClient   *GoSDK.DeviceClient
-	//topic          string
 	mqttCallback MQTTMessageReceived
 )
 
@@ -31,7 +30,7 @@ type MQTTMessageReceived func(*mqttTypes.Publish)
 
 func main() {
 
-	deviceClient = GoSDK.NewDeviceClientWithServiceAccountAndAddrs("localhost", "localhost:1883", "ace685ea0bda92f7fdef909ed8ac01", "ACE685EA0B9685A6C4A5ED8290C701", "pi_device", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJhY2U2ODVlYTBiZGE5MmY3ZmRlZjkwOWVkOGFjMDEgOjogcGlfZGV2aWNlIiwic2lkIjoiMWIwMTE5YTktMDA5NC00YThiLThjYzItNjNiMDBhZjQwMTIxIiwidXQiOjMsInR0IjoxLCJleHAiOi0xLCJpYXQiOjE1ODc2Nzc3MDl9.2hPLLZSItooF2V7sp_4dQz9aillm0aLczcMAUo9NQjE")
+	deviceClient = GoSDK.NewDeviceClientWithServiceAccountAndAddrs("localhost", "localhost:1883", "ace685ea0bda92f7fdef909ed8ac01", "ACE685EA0B9685A6C4A5ED8290C701", "pi_device", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJhY2U2ODVlYTBiZGE5MmY3ZmRlZjkwOWVkOGFjMDEgOjogcGlfZGV2aWNlIiwic2lkIjoiNWM1YThhNWMtMmMxYi00ZjE5LTk4ZDctZjI4YzQxNDljYTZiIiwidXQiOjMsInR0IjoxLCJleHAiOi0xLCJpYXQiOjE1ODc3NjcyNDF9.nNq9TyktI1h4tYmZLLQJH04m1GNmJwEsRpKzGseGcLA")
 
 	err := initMQTT(mqttCallback)
 	if err != nil {
@@ -40,18 +39,11 @@ func main() {
 
 	subscribe("LED")
 
-	ticker := time.NewTicker(10 * time.Second)
-	done := make(chan bool)
-	go func() {
 		for {
-			select {
-			case <-done:
-				return
-			case t := <-ticker.C:
 				temperature, humidity := getHygroThermoData()
 
-				hygroPayload := marshal(t, humidity)
-				thermoPayload := marshal(t, temperature)
+				hygroPayload := marshal(time.Now(), humidity)
+				thermoPayload := marshal(time.Now(), temperature)
 
 				err := Publish("Hygrometer", hygroPayload)
 				if err != nil {
@@ -61,12 +53,8 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-
+			time.Sleep(10 * time.Second)
 			}
-
-		}
-	}()
-
 	//inside platform, create stream services inside edge (one incoming, one outgoing)
 	//1. store incoming data into collection on edge
 	//2. publish to message relay topic (check suffixes in docs -- from edge to platform and vice versa) /_platform
@@ -93,10 +81,6 @@ func unmarshal(payload []byte) (t time.Time, v float32) {
 		log.Fatal(err)
 	}
 	return res.Time, res.Value
-}
-
-func Publish(topic string, message []byte) error {
-	return deviceClient.Publish(topic, message, 0)
 }
 
 func initMQTT(messageReceivedCallback MQTTMessageReceived) error {
@@ -126,6 +110,10 @@ func subscribe(topic string) {
 		}
 		go cbMessageListener(cbSubChannel)
 	}
+}
+
+func Publish(topic string, message []byte) error {
+	return deviceClient.Publish(topic, message, 0)
 }
 
 func cbMessageListener(onPubChannel <-chan *mqttTypes.Publish) {
