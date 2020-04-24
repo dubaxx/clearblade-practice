@@ -9,6 +9,8 @@ import (
 	"github.com/d2r2/go-dht"
 	"github.com/stianeikeland/go-rpio"
 	"log"
+	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -17,7 +19,7 @@ var (
 	hygroThermoPin = 17           //physical pin 11
 	deviceClient   *GoSDK.DeviceClient
 	//topic          string
-	mqttCallback   MQTTMessageReceived
+	mqttCallback MQTTMessageReceived
 )
 
 type message struct {
@@ -29,14 +31,8 @@ type MQTTMessageReceived func(*mqttTypes.Publish)
 
 func main() {
 
-	//initialize go sdk, point to edge (localhost url, system key/secret for the edge)
-	//NewDeviceClientWithServiceAccountAndAddrs(localhost, localhost:1883, systemkey, systemsecret, deviceName, service account token string)
-	deviceClient = GoSDK.NewDeviceClientWithServiceAccountAndAddrs("localhost", "localhost:1883", "", "", "", "") //todo real data
+	deviceClient = GoSDK.NewDeviceClientWithServiceAccountAndAddrs("localhost", "localhost:1883", "ace685ea0bda92f7fdef909ed8ac01", "ACE685EA0B9685A6C4A5ED8290C701", "pi_device", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJhY2U2ODVlYTBiZGE5MmY3ZmRlZjkwOWVkOGFjMDEgOjogcGlfZGV2aWNlIiwic2lkIjoiMWIwMTE5YTktMDA5NC00YThiLThjYzItNjNiMDBhZjQwMTIxIiwidXQiOjMsInR0IjoxLCJleHAiOi0xLCJpYXQiOjE1ODc2Nzc3MDl9.2hPLLZSItooF2V7sp_4dQz9aillm0aLczcMAUo9NQjE")
 
-	//init mqtt (lines 109 + 110 of adapter-go-library
-
-	//use deviceclient to sub / pub
-	//sub to topic that sets LED state, pass through to setLedState
 	err := initMQTT(mqttCallback)
 	if err != nil {
 		log.Fatal(err)
@@ -44,9 +40,6 @@ func main() {
 
 	subscribe("LED")
 
-	//topics are not defined! pub/sub automagically creates them
-	//pub to topic that stores hygrothermo data -- two pubs, one for each
-	//add a timer that publishes every (10) sec
 	ticker := time.NewTicker(10 * time.Second)
 	done := make(chan bool)
 	go func() {
@@ -74,14 +67,14 @@ func main() {
 		}
 	}()
 
-	//create collection on platform
-	//create deployment to sync to edge
-
 	//inside platform, create stream services inside edge (one incoming, one outgoing)
 	//1. store incoming data into collection on edge
 	//2. publish to message relay topic (check suffixes in docs -- from edge to platform and vice versa) /_platform
 
-	//set dial widgets to read directly from mqtt datasource, historical graph reads from collection
+	//create device objects for hygrometer and thermometer
+	//set dial widgets to read from device objects, historical graph reads from collection
+	//stream service updates device objects from collection
+	//stream service reads switch state and sends to collection
 
 }
 
@@ -109,7 +102,7 @@ func Publish(topic string, message []byte) error {
 func initMQTT(messageReceivedCallback MQTTMessageReceived) error {
 	mqttCallback = messageReceivedCallback
 	callbacks := GoSDK.Callbacks{OnConnectionLostCallback: onConnectionLost, OnConnectCallback: onConnect}
-	if err := deviceClient.InitializeMQTTWithCallback("", "", 30, nil, nil, &callbacks); err != nil { //todo clientid
+	if err := deviceClient.InitializeMQTTWithCallback("pi_device-"+strconv.Itoa(rand.Intn(10000)) /*ensures broker will accept new connection in the case of a retry*/, "", 30, nil, nil, &callbacks); err != nil {
 		return fmt.Errorf("failed to connect %s", err.Error())
 	}
 	return nil
