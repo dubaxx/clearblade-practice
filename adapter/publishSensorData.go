@@ -18,7 +18,7 @@ var (
 	blinkerPin     = rpio.Pin(10) //physical pin 19
 	hygroThermoPin = 17           //physical pin 11
 	deviceClient   *GoSDK.DeviceClient
-	mqttCallback MQTTMessageReceived
+	mqttCallback   MQTTMessageReceived
 )
 
 type message struct {
@@ -39,22 +39,27 @@ func main() {
 
 	subscribe("LED")
 
-		for {
-				temperature, humidity := getHygroThermoData()
+	for {
+		time.Sleep(10 * time.Second)
+		temperature, humidity := getHygroThermoData()
 
-				hygroPayload := marshal(time.Now(), humidity)
-				thermoPayload := marshal(time.Now(), temperature)
+		//technically this is possible, but in my condo, very unlikely...
+		if temperature == 0.0 && humidity == 0.0 {
+			continue
+		}
 
-				err := Publish("Hygrometer", hygroPayload)
-				if err != nil {
-					log.Fatal(err)
-				}
-				err = Publish("Thermometer", thermoPayload)
-				if err != nil {
-					log.Fatal(err)
-				}
-			time.Sleep(10 * time.Second)
-			}
+		hygroPayload := marshal(time.Now(), humidity)
+		thermoPayload := marshal(time.Now(), temperature)
+
+		err := Publish("Hygrometer", hygroPayload)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = Publish("Thermometer", thermoPayload)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	//inside platform, create stream services inside edge (one incoming, one outgoing)
 	//1. store incoming data into collection on edge
 	//2. publish to message relay topic (check suffixes in docs -- from edge to platform and vice versa) /_platform
@@ -138,8 +143,6 @@ func getHygroThermoData() (temperature float32, humidity float32) {
 	temperature, humidity, _, err :=
 		dht.ReadDHTxxWithRetry(dht.DHT11, hygroThermoPin, true, 10)
 	if err != nil {
-		temperature = 0
-		humidity = 0
 		log.Print("waited too long for hygrothermo data, returning 0s: ", err)
 	}
 
