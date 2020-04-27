@@ -37,7 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	subscribe("LED")
+	subscribe("LED/_edge/pi")
 
 	for {
 		time.Sleep(10 * time.Second)
