@@ -71,6 +71,7 @@ func marshal(t time.Time, v float32) (result []byte) {
 }
 
 func unmarshal(payload []byte) (t time.Time, v float32) {
+	log.Println("unmarshal")
 	res := message{}
 	err := json.Unmarshal(payload, &res)
 	if err != nil {
@@ -97,6 +98,7 @@ func onConnect(_ mqtt.Client) {
 }
 
 func subscribe(topic string) {
+	log.Println("subscribing to topic: ", topic)
 	if mqttCallback != nil {
 		var cbSubChannel <-chan *mqttTypes.Publish
 		var err error
@@ -113,6 +115,7 @@ func Publish(topic string, message []byte) error {
 }
 
 func cbMessageListener(onPubChannel <-chan *mqttTypes.Publish) {
+	log.Println("cbMessageListener")
 	for {
 		select {
 		case message, ok := <-onPubChannel:
