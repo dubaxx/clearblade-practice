@@ -44,7 +44,7 @@ func main() {
 		temperature, humidity := getHygroThermoData()
 
 		//technically this is possible, but in my condo, very unlikely...
-		if temperature == 0.0 && humidity == 0.0 {
+		if temperature < 1.0 && humidity < 1.0 {
 			continue
 		}
 
@@ -60,15 +60,6 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	//inside platform, create stream services inside edge (one incoming, one outgoing)
-	//1. store incoming data into collection on edge
-	//2. publish to message relay topic (check suffixes in docs -- from edge to platform and vice versa) /_platform
-
-	//create device objects for hygrometer and thermometer
-	//set dial widgets to read from device objects, historical graph reads from collection
-	//stream service updates device objects from collection
-	//stream service reads switch state and sends to collection
-
 }
 
 func marshal(t time.Time, v float32) (result []byte) {
