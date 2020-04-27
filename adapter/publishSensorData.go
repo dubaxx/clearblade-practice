@@ -138,7 +138,9 @@ func getHygroThermoData() (temperature float32, humidity float32) {
 	temperature, humidity, _, err :=
 		dht.ReadDHTxxWithRetry(dht.DHT11, hygroThermoPin, true, 10)
 	if err != nil {
-		log.Fatal(err)
+		temperature = 0
+		humidity = 0
+		log.Print("waited too long for hygrothermo data, returning 0s: ", err)
 	}
 
 	return temperature, humidity
@@ -147,13 +149,13 @@ func getHygroThermoData() (temperature float32, humidity float32) {
 func setLEDState(on bool) {
 	// Open and map memory to access gpio, check for errors
 	if err := rpio.Open(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	//Unmap gpio memory when done
 	defer func() {
 		if err := rpio.Close(); err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 	}()
 
