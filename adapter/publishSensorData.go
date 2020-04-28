@@ -83,6 +83,7 @@ func unmarshal(payload []byte) (t time.Time, v float32) {
 func initMQTT(messageReceivedCallback MQTTMessageReceived) error {
 	mqttCallback = messageReceivedCallback
 	callbacks := GoSDK.Callbacks{OnConnectionLostCallback: onConnectionLost, OnConnectCallback: onConnect}
+	rand.Seed(time.Now().UnixNano())
 	if err := deviceClient.InitializeMQTTWithCallback("pi_device-"+strconv.Itoa(rand.Intn(10000)) /*ensures broker will accept new connection in the case of a retry*/, "", 30, nil, nil, &callbacks); err != nil {
 		return fmt.Errorf("failed to connect %s", err.Error())
 	}
@@ -99,7 +100,7 @@ func onConnect(_ mqtt.Client) {
 
 func subscribe(topic string) {
 	log.Println("subscribing to topic: ", topic)
-	if mqttCallback != nil {
+//	if mqttCallback != nil {
 		var cbSubChannel <-chan *mqttTypes.Publish
 		var err error
 		cbSubChannel, err = deviceClient.Subscribe(topic, 0)
@@ -107,7 +108,7 @@ func subscribe(topic string) {
 			log.Fatal(err)
 		}
 		go cbMessageListener(cbSubChannel)
-	}
+//	}
 }
 
 func Publish(topic string, message []byte) error {
