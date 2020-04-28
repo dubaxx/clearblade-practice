@@ -41,24 +41,24 @@ func main() {
 
 	for {
 		time.Sleep(10 * time.Second)
-		temperature, humidity := getHygroThermoData()
-
-		//technically this is possible, but in my condo, very unlikely...
-		if temperature < 1.0 && humidity < 1.0 {
-			continue
-		}
-
-		hygroPayload := marshal(time.Now(), humidity)
-		thermoPayload := marshal(time.Now(), temperature)
-
-		err := Publish("Hygrometer", hygroPayload)
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = Publish("Thermometer", thermoPayload)
-		if err != nil {
-			log.Fatal(err)
-		}
+		//temperature, humidity := getHygroThermoData()
+		//
+		////technically this is possible, but in my condo, very unlikely...
+		//if temperature < 1.0 && humidity < 1.0 {
+		//	continue
+		//}
+		//
+		//hygroPayload := marshal(time.Now(), humidity)
+		//thermoPayload := marshal(time.Now(), temperature)
+		//
+		//err := Publish("Hygrometer", hygroPayload)
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
+		//err = Publish("Thermometer", thermoPayload)
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
 	}
 }
 
