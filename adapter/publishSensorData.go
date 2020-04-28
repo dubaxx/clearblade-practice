@@ -121,7 +121,7 @@ func cbMessageListener(onPubChannel <-chan *mqttTypes.Publish) {
 		select {
 		case message, ok := <-onPubChannel:
 			if ok {
-				mqttCallback(message)
+				//mqttCallback(message)
 				_, value := unmarshal(message.Payload)
 				if int(value) != 0 { //dirty dirty bad boy, fix the struct
 					setLEDState(true)
