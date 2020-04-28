@@ -41,24 +41,24 @@ func main() {
 
 	for {
 		time.Sleep(10 * time.Second)
-		//temperature, humidity := getHygroThermoData()
-		//
-		////technically this is possible, but in my condo, very unlikely...
-		//if temperature < 1.0 && humidity < 1.0 {
-		//	continue
-		//}
-		//
-		//hygroPayload := marshal(time.Now(), humidity)
-		//thermoPayload := marshal(time.Now(), temperature)
-		//
-		//err := Publish("Hygrometer", hygroPayload)
-		//if err != nil {
-		//	log.Fatal(err)
-		//}
-		//err = Publish("Thermometer", thermoPayload)
-		//if err != nil {
-		//	log.Fatal(err)
-		//}
+		temperature, humidity := getHygroThermoData()
+
+		//technically this is possible, but in my condo, very unlikely...
+		if temperature < 1.0 && humidity < 1.0 {
+			continue
+		}
+
+		hygroPayload := marshal(time.Now(), humidity)
+		thermoPayload := marshal(time.Now(), temperature)
+
+		err := Publish("Hygrometer", hygroPayload)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = Publish("Thermometer", thermoPayload)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -100,7 +100,6 @@ func onConnect(_ mqtt.Client) {
 
 func subscribe(topic string) {
 	log.Println("subscribing to topic: ", topic)
-//	if mqttCallback != nil {
 		var cbSubChannel <-chan *mqttTypes.Publish
 		var err error
 		cbSubChannel, err = deviceClient.Subscribe(topic, 0)
@@ -108,7 +107,6 @@ func subscribe(topic string) {
 			log.Fatal(err)
 		}
 		go cbMessageListener(cbSubChannel)
-//	}
 }
 
 func Publish(topic string, message []byte) error {
@@ -121,9 +119,8 @@ func cbMessageListener(onPubChannel <-chan *mqttTypes.Publish) {
 		select {
 		case message, ok := <-onPubChannel:
 			if ok {
-				//mqttCallback(message)
 				_, value := unmarshal(message.Payload)
-				if int(value) != 0 { //dirty dirty bad boy, fix the struct
+				if int(value) != 0 {
 					setLEDState(true)
 				} else {
 					setLEDState(false)
